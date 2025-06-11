@@ -101,20 +101,6 @@ import "github.com/lkmio/avformat/utils"
 //dyn     H263-1998   V           90,000
 
 var (
-	payloadTypes    map[int]PayloadType
-	CodecIdPayloads map[utils.AVCodecID]PayloadType
-)
-
-type PayloadType struct {
-	Pt        int
-	Encoding  string
-	MediaType utils.AVMediaType
-	CodeId    utils.AVCodecID
-	ClockRate int
-	Channels  int
-}
-
-func init() {
 	payloadTypes = map[int]PayloadType{
 		0:  {0, "PCMU", utils.AVMediaTypeAudio, utils.AVCodecIdPCMMULAW, 8000, 1},
 		3:  {3, "GSM", utils.AVMediaTypeAudio, utils.AVCodecIdNONE, 8000, 1},
@@ -146,16 +132,33 @@ func init() {
 		96: {96, "", utils.AVMediaTypeVideo, utils.AVCodecIdNONE, 90000, -1},
 	}
 
-	CodecIdPayloads = map[utils.AVCodecID]PayloadType{
-		utils.AVCodecIdPCMMULAW: {0, "PCMU", utils.AVMediaTypeAudio, utils.AVCodecIdPCMMULAW, 8000, 1},
-		utils.AVCodecIdPCMALAW:  {8, "PCMA", utils.AVMediaTypeAudio, utils.AVCodecIdPCMALAW, 8000, 1},
-
-		utils.AVCodecIdH264: {108, "H264", utils.AVMediaTypeVideo, utils.AVCodecIdH264, 90000, 1},
-		utils.AVCodecIdH265: {109, "H265", utils.AVMediaTypeVideo, utils.AVCodecIdH264, 90000, 1},
-		utils.AVCodecIdAAC:  {97, "mpeg4-generic", utils.AVMediaTypeAudio, utils.AVCodecIdAAC, 48000, 1},
-		utils.AVCodecIdOPUS: {111, "OPUS", utils.AVMediaTypeAudio, utils.AVCodecIdOPUS, 48000, 2},
+	SupportedCodecs = map[utils.AVCodecID]interface{}{
+		utils.AVCodecIdH264: func(seq int, ssrc uint32) (Muxer, PayloadType) {
+			return NewH264Muxer(108, seq, ssrc), PayloadType{108, "H264", utils.AVMediaTypeVideo, utils.AVCodecIdH264, 90000, 1}
+		},
+		utils.AVCodecIdH265: func(seq int, ssrc uint32) (Muxer, PayloadType) {
+			return NewH265Muxer(109, seq, ssrc), PayloadType{109, "H265", utils.AVMediaTypeVideo, utils.AVCodecIdH264, 90000, 1}
+		},
+		utils.AVCodecIdAAC: func(seq int, ssrc uint32) (Muxer, PayloadType) {
+			return NewAACMuxer(97, seq, ssrc), PayloadType{97, "mpeg4-generic", utils.AVMediaTypeAudio, utils.AVCodecIdAAC, 48000, 1}
+		},
+		utils.AVCodecIdPCMALAW: func(seq int, ssrc uint32) (Muxer, PayloadType) {
+			return NewMuxer(8, seq, ssrc), PayloadType{8, "PCMA", utils.AVMediaTypeAudio, utils.AVCodecIdPCMALAW, 8000, 1}
+		},
+		utils.AVCodecIdPCMMULAW: func(seq int, ssrc uint32) (Muxer, PayloadType) {
+			return NewMuxer(0, seq, ssrc), PayloadType{0, "PCMU", utils.AVMediaTypeAudio, utils.AVCodecIdPCMMULAW, 8000, 1}
+		},
+		utils.AVCodecIdADPCMG722: func(seq int, ssrc uint32) (Muxer, PayloadType) {
+			return NewMuxer(9, seq, ssrc), PayloadType{9, "G722", utils.AVMediaTypeAudio, utils.AVCodecIdADPCMG722, 8000, 1}
+		},
 	}
-}
+)
 
-type Profile struct {
+type PayloadType struct {
+	Pt        int
+	Encoding  string
+	MediaType utils.AVMediaType
+	CodeId    utils.AVCodecID
+	ClockRate int
+	Channels  int
 }

@@ -8,7 +8,7 @@ import (
 const (
 	VERSION           = 2
 	FixedHeaderLength = 12
-	PacketMaxSize     = 1458
+	PacketMaxSize     = 1458 - 40
 	PayloadMaxSize    = 0
 	PayloadMinSize    = 261
 )
